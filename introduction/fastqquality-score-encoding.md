@@ -2,7 +2,7 @@
 
 Upon completion of this section on fastq quality scores the learner will understand the following:
 
--   ASSCI character encodings are used to represent quality scores
+-   ASCII character encodings are used to represent quality scores
 -   These numbers are converted to values between -5 and 41 to represent quality score depending on the encoding method
 
 

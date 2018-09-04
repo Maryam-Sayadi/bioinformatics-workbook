@@ -1,6 +1,6 @@
 # Downloading files using wget
 
-Wget is short for World Wide Web get and is used on the command line to download a file from a website or webserver.
+Wget is short for World Wide Web get and is used on the command line to download a file from a website or web server.
 
 ## Learning Objective
 Upon completion of this section the learner will be able to:
@@ -9,7 +9,9 @@ Upon completion of this section the learner will be able to:
 * Download multiple files using regular expressions
 * Download an entire website
 
+For more information on wget installation and documentation visit [GNU](https://www.gnu.org/software/wget/) website
 
+----
 
 Here is a generic example of how to use wget
 to download a file.
@@ -17,7 +19,7 @@ to download a file.
 wget http://link.edu/filename
 ```
 
-A are a couple of specific Examples
+Here are a couple of specific Examples
 *  Photo of a kitten in Rizal Park
 *  Photo of Arabidopsis
 
@@ -73,5 +75,5 @@ wget --mirror -p --convert-links -P ./LOCAL-DIR WEBSITE-URL
 ##  Citations  
 
 - [Stack-exchange thread](http://unix.stackexchange.com/questions/117988/wget-with-wildcards-in-http-downloads)
-- [Blog](http://blog.alastair.pro/2012/10/21/wget-regex-filter-by-file-type/)
+ ![Blog](http://blog.alastair.pro/2012/10/21/wget-regex-filter-by-file-type/)
 - [Forum](http://www.linuxquestions.org/questions/linux-newbie-8/wget-with-regular-expressions-846368/)

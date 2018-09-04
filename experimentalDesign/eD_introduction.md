@@ -20,7 +20,7 @@ First and foremost you should ask yourself what is it that you are trying to ans
 **Fishing Expedition:**  ```
 Common feedback given by grant review panelists that feel a researcher is sequencing samples without a clear direction or hypothesis.```
 
-There are four main aspects that should be considered to answer your biological question during experimental design: biological system, sequencing technology and cost.
+There are three main aspects that should be considered to answer your biological question during experimental design: biological system, sequencing technology and cost.
 
 ---
 
@@ -41,14 +41,14 @@ There are four main aspects that should be considered to answer your biological 
 ## Sequencing Technology
 There are now three main sequencing technologies that are available and commonly used: Illumina, PacBio and MinIon.  Understanding the assumptions and limitations of each of these technologies can aid in planning the experimental design.
 
-- **Illumina**  
+#### Illumina  
 Illumina raw data are short (100-300bp) in size and of high quality for reads shorter than 200 bps.  Quality scores for bases on reads between 250-300bp usually are of lower quality.
  - **Size:** ```short```
  - **Output:** ```90,000 Gb (HiSeq 3000-4000)```
  - **Base Quality:** ```99.9% High```
 
 
-- **PacBio**
+#### PacBio
 PacBio raw data (subreads) are long (3,000-15,000bp) with max read lengths around 40,000-80,000bp.
  - **Size:** ```long```
  - **Output**: ```1 Gb (RSII)```
@@ -56,7 +56,7 @@ PacBio raw data (subreads) are long (3,000-15,000bp) with max read lengths aroun
  - **Base Quality:** ```85% Medium```
 
 
-- **MinIon**
+#### MinIon
 MinIon raw data are long (3,000-70,000bp) with max read lengths as high as 250,000bp.
  - **Size:** ```long```
  - **Output**: ```1 Gb (RSII)```
@@ -72,7 +72,7 @@ Most research has a strict allowance for how much sequencing and bioinformatics 
  - **Read length:**```Short reads (50bp) are difficult to align to unique locations in a genome, so unless the experiment is for smRNA it is uncommon to use very short reads.```
 
 
- - **Paired-end** ```Both ends of the DNA fragment are sequenced.  This type of sequencing is useful for obtaining more unique alignments to a genome  For RNA-Seq experiments with a known genome, it is recommended to use at least 100bp paired-end Illumina data.  For RNA-Seq experiments without a genome or a genome of questionable quality, it recommended to use 150bp Illumina paired-end  data. ```
+ - **Paired-end** ```Both ends of the DNA fragment are sequenced.  This type of sequencing is useful for obtaining more unique alignments to a genome  For RNA-Seq experiments with a known genome. it is recommended to use at least 100bp paired-end Illumina data.  For RNA-Seq experiments without a genome or a genome of questionable quality, it recommended to use 150bp Illumina paired-end  data. ```
 
 
  - **Single-end** ```Used when the experiment has DNA fragments shorter than the length of the read.  For example, smRNA experiments are typically done with 50bp single-end data. ```

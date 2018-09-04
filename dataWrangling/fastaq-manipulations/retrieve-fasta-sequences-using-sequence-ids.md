@@ -1,16 +1,29 @@
 # Retrieve FASTA sequences using sequence IDs
-## 1. cdbfasta/cdbyank ###
+## 1. cdbfasta/cdbyank
 This is a tutorial for using file-based hashing tools (`cdbfasta` and `cdbyank`) that can be used for creating indices for quick retrieval of any particular sequences from large multi-FASTA files. Use `cdbfasta` to create the index file for a multi-FASTA file and `cdbyank` to pull records based on that index file.
 To create a index file for the large multi-FASTA file
 ```
-module load cdbfasta
+module load <name of cdbfasta module on your system>
 cdbfasta /path/to/the/largeFASTA.fa
 ```
-Once done, you will see a `*.cidx` file in the original directory (`/path/to/the/largeFASTA.fa.cidx`). Now you can retrieve any sequence from this file using `cdbyank`.
+Once done, you will see a `*.cidx` binary file in the original directory (`/path/to/the/largeFASTA.fa.cidx`). Now you can retrieve any sequence from this file using `cdbyank`.
 
 ```
 cdbyank -a ACCID /path/to/the/largeFASTA.fa.cidx
-# if you have a file of ids, then
+```
+For long and complex fastA file accessions there are two options to create the
+index file in such a way that there is no need to provide the full string to
+cdbyank in order to retrieve such a sequence, but only the first
+"<db>|<accession>" pair is sufficient:
+
+```
+ -c : the index file is built only by storing the "shortcut key"
+ -C : the index file is built by storing both the "shortcut key" and the full
+      keys
+```
+
+ You can retrieve multiple sequences if you have a file of their ids:
+```
 cat ids_file.txt | cdbyank /path/to/the/largeFASTA.fa.cidx > ids_file.fasta
 ```
 
@@ -55,14 +68,27 @@ TTAAATTCACATCTTTACAGAACTTTAGCAACTGTCTGCCCAACTCTTGCACAACACAAGTACCTAATCATAGTTTATCT
 
 database can be generated as follows:
 ```
-module laod ncbi-blast
+module laod < name of ncbi-blast module on your system>
 makeblastdb -in mydb.fsa -parse_seqids -dbtype nucl
 ```
+The text in the definition line of each sequence will be stored in the BLAST database and displayed in the BLAST report, but it will not be possible to fetch individual sequences using blastdbcmd ( see bellow).
 
-To retreive a sequence:
+ The `–parse_seqids` flag will enable retrieval of sequences based upon sequence identifiers. The identifier should begin right after the “>” sign on the definition line, contain no spaces, and follow the formats described [here](http://www.ncbi.nlm.nih.gov/toolkit/doc/book/ch_demo/#ch_demo.T5). The identifier consists of a two- or three-letter tag indicating the ID’s type, followed by one or more data fields, which are separated from the tag and each other by vertical bars (|).
 
+
+To retrieve a sequence:
 ```
-blastdbcmd -entry "1" -db mydb.fsa -target_only
+blastdbcmd -entry <id> -db <db name> -target_only
+```
+Each one of the [provided data fields]((http://www.ncbi.nlm.nih.gov/toolkit/doc/book/ch_demo/#ch_demo.T5) is sufficient for querying any given sequence. Among these, the most commonly used are NCBI sequence IDs, database specific accession numbers, and its gene/protein name.
+
+User supplied sequences should make use of the local or general identifiers. If the first token after the “>” does not contain a bar (“|”) it will be parsed as a local ID.
+
+
+#### Example
+```
+blastdbcmd -entry "gnl|MYDB|1" -db mydb.fsa -target_only
+
 >gnl|MYDB|1 this is sequence 1
 GAATTCCCGCTACAGGGGGGGCCTGAGGCACTGCAGAAAGTGGGCCTGAGCCTCGAGGATGACGGTGCTGCAGGAACCCG
 TCCAGGCTGCTATATGGCAAGCACTAAACCACTATGCTTACCGAGATGCGGTTTTCCTCGCAGAACGCCTTTATGCAGAA
@@ -75,12 +101,18 @@ TTAAATTCACATCTTTACAGAACTTTAGCAACTGTCTGCCCAACTCTTGCACAACACAAGTACCTAATCATAGTTTATCT
 CACAGACAGCCTGAGACAGTTCTTACGGAAACACCCCAGGACACAATTGAATTAAACAGATTGAATTTAGAATCTTCCAA
 ```
 
+Note that the full identifier string (e.g., “gnl|MYDB|1” in above example) should be used to retrieve sequences with a general ID.
 
 ## 3. Bioawk ##
 If all your ids are saved in `IDs.txt`, then you can use this command:
 ```
 bioawk -cfastx 'BEGIN{while((getline k <"IDs.txt")>0)i[k]=1}{if(i[$name])print ">"$name"\n"$seq}' input.fasta
 ```
+#### Possible problems:
+
+* The ids in the id file contain ">" character.
+* The text in the definition line of each sequence is included in the id file entries.
+* There is any space or tab at the end of each id file entries.
 
 ## 4. seqtk ##
 This method can be applied directly to FASTA or a FASTQ file, compressed or uncompressed files. [Seqtk](https://github.com/lh3/seqtk) is a fast and lightweight tool for processing biological data (`FASTA`/`FASTQ`). if you have a list of identifiers that you would like to extract from a file, you can run this command as follows:  

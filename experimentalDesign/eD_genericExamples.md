@@ -1,4 +1,4 @@
-# **RNA-Seq Analysis Generic Example:** experiments with 192 samples or less
+# **RNA-Seq Analysis Generic Example:** Experiments with 192 samples or less
 
 #### Background
  This example assumes genomic resources already exist for the organism under study.  For example, the genome is assembled, annotated and available.  

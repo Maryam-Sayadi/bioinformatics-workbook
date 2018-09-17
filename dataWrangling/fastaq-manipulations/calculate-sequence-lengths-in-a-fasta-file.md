@@ -29,7 +29,7 @@ bioawk -c fastx '{print $name length($seq)}' input.fasta
 ```
 Output will be similar to the above script and can be redicrected to any file if you want.
 
-# More information
+## More information
 *  [Introduction to Bioawk](/Appendix/bioawk-basics.md)
 
 [Table of contents](https://isugenomics.github.io/bioinformatics-workbook/)

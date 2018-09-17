@@ -1,13 +1,12 @@
 # Introduction to Metagenomics
 
----
-title: "Metagenomics tutorial part 1: Quality control, assembly and mapping"
-excerpt: "An example workflow for assembly based metagenomics"
-layout: single
-author: "Adam Rivers"
----
-By Adam Rivers
+---------
 
+This tutorial is adapted from ["Metagenomics tutorial part 1"](https://usda-ars-gbru.github.io/Microbiome-workshop/tutorials/metagenomics/),  by  Adam Rivers.
+
+---------
+
+MetaGenomics is the study of genetics from the material directly obtained from environmental samples without the use of cultivation-based methods. Shotgun metagenomics is an approach based on randomly breaking down a long sequence of DNA fragment, use sequencing methods ( such as sanger or NGS) to sequence each fragment (contigs), and use algoritms to overlap the fragments to get the complete range of sequence.  
 
 # Overview
 Shotgun metagenomics data can be analyzed using several different approaches. Each approach is best suited for a particular group of questions. The methodological approaches can be broken down into three broad areas: read-based approaches, assembly-based approaches and detection-based approaches. This tutorial takes an assembly-based approach. The key points of the approaches are listed in this table:
@@ -19,67 +18,68 @@ Typical workflow | 1. Read QC.<br>2. Read merging (Bbmerge).<br>3. Mapping to NR
 Typical questions|&bull; What is the bulk taxonomic/functional composition of these samples?<br>&bull; What new kinds of a particular functional gene family can I find?<br>&bull; How do my sites or treatments differ in taxonomic/functional composition?<br> |&bull; What are the functional and metabolic capabilities of specific microbes in my sample?<br>&bull; What is the phylogeny of gene families in my samples?<br>&bull; Do the organisms that inhabit my samples differ?<br>&bull; Are there variants within taxa in my population? | &bull; Are known organisms of interest present in my sample?<br> &bull; Are known functional genes e.g. beta-lactamases, present in my sample?<br>
 Examples | [MG-Rast](http://metagenomics.anl.gov/) | [IMG from JGI](https://img.jgi.doe.gov/cgi-bin/mer/main.cgi) | [Taxonomer](http://taxonomer.iobio.io/), [Surpi](http://chiulab.ucsf.edu/surpi/), [One Codex](https://www.onecodex.com/), [CosmosID](http://www.cosmosid.com/)
 
-# Data sets in this tutorial
+### Data sets in this tutorial
 
-Many of the initial processing steps in metagenomics are quite computationally intensive. For this reason we will use a small dataset from a mock viral community containing a mixture of small single- and double-stranded DNA viruses.
+The data set for this tutorial is from derived  from  untreated Arabidopsis thaliana roots(83 bp, SRA entry SRR420813). The data has been used [to evaluate read trimming effects on Illumina NGS data analysis](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0085024).
+Many of the initial processing steps in metagenomics are quite computationally intensive. For this reason, it is recommended that you use computer clusters through out this tutorial.
 
-Viruses in Data Set 1 | Type
----------------------|-----
-Cellulophaga_phage_phi13:1_514342768 | dsDNA
-Cellulophaga_phage_phi38_1_526177551 | dsDNA
-Enterobacteria_phage_phiX174_962637 | ssDNA
-PSA_HS2 | dsDNA
-Cellulophaga_phage_phi18_1_526177061 | dsDNA
-Cellulophaga_phage_phi38_2_514343001 | dsDNA
-PSA_HM1 | dsDNA
-PSA_HS6 | dsDNA
-Cellulophaga_phage_phi18_3_526177357 | dsDNA
-Enterobacteria_phage_alpha3_194304496 | ssDNA
-PSA_HP1 | dsDNA
-PSA_HS9 | dsDNA
+### Connecting to computer cluster
 
-If you are running this tutorial on the Ceres computer cluster the data are available at:
+ From Terminal or Putty (for Windows users) create a secure shell connection to your computer cluster.
 
- ```bash
- # Mock viral files
- /project/microbiome_workshop/metagenome/viral
-```
-
-# Connecting to Ceres
-
-Ceres is the computer cluster for the USDA Agricultural Research Service's SCInet computing environment. From Terminal or Putty (for Windows users) create a secure shell connection to Ceres.  You can similarly connect to any remote machine that you have access to.
-
+You can connect to any remote machine that you have access to:
 
 ```bash
-ssh -o TCPkeepAlive=yes -o ServeraliveInterval=20 -o ServerAliveCountMAx=100 <user.name>@login.scinet.science
+ssh -o TCPkeepAlive=<yes or No> -o ServerAliveInterval=<timeout interval> -o ServerAliveCountMAx=<number of messages> <username><computer name or the IP address>
 ```
-Once you are logged into Ceres you can request access to an interactive node.
-In a real analysis you would create a script that runs all the commands in sequence and submit the script through a program called Sbatch, part of the computer's job scheduling software named Slurm.
 
-To request access to an interactive node:
+options:
+* `TCPkeepAlive`: Ensures that certain firewalls don't drop idle connections
+
+* `ServerAliveInterval`: Sets a timeout interval in seconds after which if no data has been received from the server, ssh will send a message through the encrypted channel to request a response from the server. The default is 0, indicating that these messages will not be sent to the server.
+
+* `ServerAliveCountMAx`:  Sets the number of server alive messages which may be sent without ssh receiving any messages back from the server. If this threshold is reached while server alive messages are being sent, ssh will disconnect from the server, terminating the session.The default value is 3. If, for example, ServerAliveInterval  is set to 15 and ServerAliveCountMax is left at the default, if the server becomes unresponsive, ssh will disconnect after approximately 45 seconds.
+
+
+Once you are logged in, you can request access to an interactive node. In a real analysis you would create a script that runs all the commands in sequence and submit the script through a program (such as [sbatch](https://slurm.schedmd.com/sbatch.html)) that submits a batch script to a computer's job scheduling software such as [Slurm](https://slurm.schedmd.com/)).
+
+To request access to an interactive node on [slurm workload manager](https://slurm.schedmd.com/):
 ```bash
-# Request access to one node of the cluster
-# Note that "microbiome" is a special queue for the workshop,
-# to see available queues use the command "sinfo"
-salloc -p microbiome -N 1 -n 40 -t 04:00:00
-
-# Load the required modules
-module load bbtools/gcc/64/37.02
-module load megahit/gcc/64/1.1.1
-module load samtools/gcc/64/1.4.1
-module load quast/gcc/64/3.1
+salloc -p <queue(partition) name> -N <number of nodes> -n <number of tasks> -t <request  time in hour>
 ```
 
-When you are done at the end of the tutorial end your session like this.
-```bash
-# sign out of the allocated node
-exit
-# sign out of Ceres head node
-exit
-```
 
-# Part 1: Assembly and mapping
+*  To see available queues on [slurm workload manager](https://slurm.schedmd.com/) use the command "sinfo"
+* The default value for -n is one task per node, but  the --cpus-per-task option will change this default.
+* Request time as hh:mm:ss , example : 04:00:00 (four hours)
+
+
+
+### Required modules
+
+* [SraToolkit](https://ncbi.github.io/sra-tools/) : for downloading data from NCBI SRA website.
+* [BBDuk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/) : for trimming
+* [Megahit](https://github.com/voutcn/megahit): for assembly
+* [samTools](http://samtools.sourceforge.net/) : for sequence alignment
+* [Quast](http://bioinf.spbau.ru/quast) : for evaluating genome assemblies
+
+ To check for currently loaded modules:
+ ```
+module list
+ ```
+ To get a list of available modules:
+ ```
+module avail
+ ```
+ To load a module:
+ ```
+module load <module name>
+ ```
+
+## Part 1: Assembly and mapping
+
 Create a directory for the tutorial.
+
 ```bash
 # In your homespace or other desired location, make a
 # directory and move into it
@@ -87,17 +87,22 @@ mkdir metagenome1
 cd metagenome1
 # make a data directory
 mkdir data
+cd data
 ```
 
+You can use [fastq-dump](https://ncbi.github.io/sra-tools/fastq-dump.html) tool from SRA Toolkit to get the data file we will be working with:
 
-The data file we will be working with is here:
 
 ```bash
-/project/microbiome_workshop/metagenome/viral/10142.1.149555.ATGTC.shuff.fastq.gz
+fastq-dump SRR420813
+```
+To save storage lets compress the fastq file:
+```bash
+gzip SRR420813.fastq
 ```
 Lets take a peek at the data.
 ```bash
-zcat /project/microbiome_workshop/metagenome/viral/10142.1.149555.ATGTC.shuff.fastq.gz | head
+zcat SRR420813.fastq | head
 ```
 The output should look like this:
 ```
@@ -112,32 +117,32 @@ BAACCFFFFFFFGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHGHHGHHIHHHHHHHHHHHHHH
 @MISEQ05:522:000000000-ALD3F:1:1105:15449:9605 1:N:0:ATGTC
 TGCTACTACCACAAGCTTCACACGCTAAGGGCACTGCAATATTATAGCTACAATAATGGCAACGCAATTGTTTTTTATGCTGATGATACGTTAGACTTACATCACAATTAGGACATTGCGGAGAATGCCCACACGTAGTACATTCCATGAT
 ```
-We can see that this data are interleaved, paired-end based on the the `1` and `2` after the initial identifier. From the identifier and the length of the reads we can see that the data was sequenced in 2x150 mode on an Illumina MiSeq instrument.
 
-For speed we will be subsampling our data. the original fasta file has been shuffled (keeping pairs together) to get a random sampling of reads.  To subsample we will use zcat to unzip the file and stream the data out. That data stream will be "piped" (sent to) the program head which will display the first 2 million lines and that displayed text will be written to a file with the `>` operator.
+
+For speed we will be subsampling our data. To subsample we will use zcat to unzip the file and stream the data out. That data stream will be "piped" (sent to) the program head which will display the first 2 million lines and that displayed text will be written to a file with the `>` operator.
 
 ```bash
 # Take a subset 500,000 reads of the data
-time zcat /project/microbiome_workshop/metagenome/viral/10142.1.149555.ATGTC.shuff.fastq.gz \
-| head -n 2000000 | gzip  > data/10142.1.149555.ATGTC.subset_500k.fastq.gz
+zcat  SRR420813.fastq \
+| head -n 2000000 | gzip  > SRR420813.subset_500k.fastq.gz
 ```
-Time to run: 30 seconds
 
 Raw sequencing data needs to be processed to remove artifacts. The first step in
 this process is to remove contaminant sequences that are present in the sequencing process such as PhiX which is sometimes added as an internal control for sequencing runs.
 
 ```bash
 # Filter out contaminant reads placing them in their own file
-time bbduk.sh in=data/10142.1.149555.ATGTC.subset_500k.fastq.gz \
-out=data/10142.1.149555.ATGTC.subset_500k.unmatched.fq.gz \
-outm=data/10142.1.149555.ATGTC.subset_500k.matched.fq.gz \
+
+bbduk.sh in=SRR420813.subset_500k.fastq.gz \
+out=SRR420813.subset_500k.unmatched.fq.gz \
+outm=SRR420813.subset_500k.matched.fq.gz \
 k=31 \
 hdist=1 \
 ftm=5 \
-ref=/software/apps/bbtools/gcc/64/37.02/resources/sequencing_artifacts.fa.gz \
-stats=data/contam_stats.txt
+ref=<artifacts reference file> \
+stats=contam_stats.txt
 ```
-Time to run: 20 seconds
+* note that ```<artifacts reference file>``` can be found as ```resources/sequencing_artifacts.fa.gz```  in the ```bbToolkit/``` directory. You can contact your cluster computer help desk for locating the sequencing_artifacts.fa.gz file.  
 
 Lets look at the output:
 

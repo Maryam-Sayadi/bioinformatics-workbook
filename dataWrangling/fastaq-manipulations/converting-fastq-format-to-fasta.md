@@ -8,7 +8,7 @@ There are several ways to convert fastq to fasta sequences. Some methods are lis
 sed -n '1~4s/^@/>/p;2~4p' INFILE.fastq > OUTFILE.fasta
 ```
 
-Please note that there are peculiar difference between sed under UNIX and sed under BSD LINUX in Mac OS. So for Mac users there are two options:
+Please note that there are some particular differences between sed under UNIX and sed under BSD LINUX in Mac OS. So for Mac users there are two options:
 
 * Mac user can search for the equivalent of the sed commands under Mac if they get "invalid command code" error message.
 * Other option is to install gnu-sed :
@@ -99,7 +99,7 @@ Mac users could Possibly face some   difficulties during installation of FASTX s
 
 For other available tools visit [FASTX-Toolkit.](http://hannonlab.cshl.edu/fastx_toolkit/)
 ###  Bioawk
-Another option to convert fastq to fasta format using `bioawk`
+
 ```
 bioawk -c fastx '{print ">"$name"\n"$seq}' input.fastq > output.fasta
 ```
@@ -131,7 +131,7 @@ Example:
 ```
 seqtk seq -a input.fastq > output.fasta
 ```
-Note that you can use either compressed or uncompressed files for this tool
+Note that you can use either compressed or uncompressed files for this tool.
 ## More information
 *  [Introduction to Bioawk](/Appendix/bioawk-basics.md)
 

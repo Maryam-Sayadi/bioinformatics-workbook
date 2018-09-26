@@ -20,7 +20,8 @@ Examples | [MG-Rast](http://metagenomics.anl.gov/) | [IMG from JGI](https://img.
 
 ### Data sets in this tutorial
 
-The data set for this tutorial is from derived  from  untreated Arabidopsis thaliana roots(83 bp, SRA entry SRR420813). The data has been used [to evaluate read trimming effects on Illumina NGS data analysis](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0085024).
+The data set for this tutorial is from a mock viral community from [Adam Rivers' tutorial page](https://usda-ars-gbru.github.io/Microbiome-workshop/tutorials/metagenomics/). The data file can be downloaded from [here](https://usda-ars-gbru.github.io/Microbiome-workshop/assets/metagenome/10142.1.149555.ATGTC.subset_500k.fastq.gz).
+
 Many of the initial processing steps in metagenomics are quite computationally intensive. For this reason, it is recommended that you use computer clusters through out this tutorial.
 
 ### Connecting to computer cluster
@@ -57,7 +58,6 @@ salloc -p <queue(partition) name> -N <number of nodes> -n <number of tasks> -t <
 
 ### Required modules
 
-* [SraToolkit](https://ncbi.github.io/sra-tools/) : for downloading data from NCBI SRA website.
 * [BBDuk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/) : for trimming
 * [Megahit](https://github.com/voutcn/megahit): for assembly
 * [samTools](http://samtools.sourceforge.net/) : for sequence alignment
@@ -90,110 +90,112 @@ mkdir data
 cd data
 ```
 
-You can use [fastq-dump](https://ncbi.github.io/sra-tools/fastq-dump.html) tool from SRA Toolkit to get the data file we will be working with:
-
-
-```bash
-fastq-dump SRR420813
-```
-To save storage lets compress the fastq file:
-```bash
-gzip SRR420813.fastq
-```
 Lets take a peek at the data.
 ```bash
-zcat SRR420813.fastq | head
+zcat 10142.1.149555.ATGTC.subset_500k.fastq.gz | head
 ```
 The output should look like this:
 ```
-@MISEQ05:522:000000000-ALD3F:1:1101:22198:19270 1:N:0:ATGTC
-ATGTTCTGAATTAAGCAGGCGGTTTCCATTAATTACCTTTTCCTCTTCCTCTAATCCTATTATGAGATTTTTGAGTAAACTTATTTCTAATTCTGTTGTTTTTATAGCTGTAGTTAAAGCTTCAGATTCTTCATCTGAAACTTTAGTATCT
+@MISEQ05:522:000000000-ALD3F:1:2114:16371:19347 1:N:0:ATGTC
+GGATATTTTGCTTTAAAATTTTCTTTTACCGCTTTTGGCACAGCATCATCCTGATATTGACAACTCATATACGTTACCGAAACAAACAAAGTCAAAAATAATAAACAGCTTCTCATGGCTTTCTTTTTTAAATTCTAAGCTGCGAAGAAAC
 +
-CCDBCFFFFFFFGGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHGHHHHHHHHHHHHHHHHHHHHHHHHHHGGGHHHHHHHGHHHHHHHHHHHHHHHHHHHGHHHGHHHHHHHHHHHHHHHHHHHHHHHHHFHHGHHHHHHHHHHGHHFH
-@MISEQ05:522:000000000-ALD3F:1:1101:22198:19270 2:N:0:ATGTC
-GAGGAATGGTTTGTCTCCTAAAATTGATGAAAGTAGTATTCAAATTTCAGGATTAAAAGGAGTTTCTATTTTGTCTATTGCTTATGATATTAATTATTTAGATACTAAAGTTTCAGATGAAGAATCTGAAGCTTTAACTACAGCTATAAAA
+CCCDCFFFFFFFGGGGGGGGGGHHHHHHHHGGGGGHHGHHHHHHHGHHHHHHHHHHHIHHHHHHHHHHHHHHHHHHGHGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHGHHHHHHHHHHHHHHGGGGGHHH
+@MISEQ05:522:000000000-ALD3F:1:2114:16371:19347 2:N:0:ATGTC
+GAGAGAAGAGATATAGGACTAAAATGTATTTTTTTTACTGCTAGTGCTTTTGAGCTAGTAATCGTTTTTATAAAGTTAACTATTGAGGGTGCTAATCGGTTTCTTCGCAGCTTAGAATTTAAAAAAGAAAGCCATGAGAAGCTGTTTATTA
 +
-BAACCFFFFFFFGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHGHHGHHIHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHEHHHHHHHHHHGHGHHHHHHHGHGHHHHHFHH
-@MISEQ05:522:000000000-ALD3F:1:1105:15449:9605 1:N:0:ATGTC
-TGCTACTACCACAAGCTTCACACGCTAAGGGCACTGCAATATTATAGCTACAATAATGGCAACGCAATTGTTTTTTATGCTGATGATACGTTAGACTTACATCACAATTAGGACATTGCGGAGAATGCCCACACGTAGTACATTCCATGAT
+CCCCCDFFFFFFGGGGGGGGGGHHHHHHHHHHHGGGHHHHHHHHHHHHHHHHGGHHHHHHHHHGHHGGGHHHHHFHHHGHHHHHHHHHGGFGHHHGHGGGGGHHHHHGGGGHHHHHHHHHHHHHHGGGHHHHGHHHHHHHHHHHHHHHHHH
+@MISEQ05:522:000000000-ALD3F:1:2114:17821:9269 1:N:0:ATGTC
+AATTTTACCTTTTGATGCAAATTTAAACTTAACGAAAGCGTCTGTAGTATCTTTTAAACTAAGACCCATTTCATCAACAATTCCATTTATGAACATCATATCCTTTGCAGCAGCTTCCGAACTACCACTTGCAGCAAGCATAGAAGCCTCC
 ```
 
+We can see that this data is interleaved, paired-end based on the 1 and 2 after the initial identifier. From the identifier and the length of the reads we can see that the data was sequenced in 2X150  mode on a Illumina Miseq instrument.
 
-For speed we will be subsampling our data. To subsample we will use zcat to unzip the file and stream the data out. That data stream will be "piped" (sent to) the program head which will display the first 2 million lines and that displayed text will be written to a file with the `>` operator.
+Raw sequencing data needs to be processed to remove artifacts. The first step in this process is to remove contaminant sequences that are present in the sequencing process such as PhiX which is sometimes added as an internal control for sequencing runs:
 
-```bash
-# Take a subset 500,000 reads of the data
-zcat  SRR420813.fastq \
-| head -n 2000000 | gzip  > SRR420813.subset_500k.fastq.gz
-```
+### Kmer filtering
 
-Raw sequencing data needs to be processed to remove artifacts. The first step in
-this process is to remove contaminant sequences that are present in the sequencing process such as PhiX which is sometimes added as an internal control for sequencing runs.
 
 ```bash
 # Filter out contaminant reads placing them in their own file
 
-bbduk.sh in=SRR420813.subset_500k.fastq.gz \
-out=SRR420813.subset_500k.unmatched.fq.gz \
-outm=SRR420813.subset_500k.matched.fq.gz \
+bbduk.sh in=10142.1.149555.ATGTC.subset_500k.fastq.gz\
+out=10142.1.149555.ATGTC.subset_500k.unmatched.fq.gz \
+outm=10142.1.149555.ATGTC..subset_500k.matched.fq.gz \
 k=31 \
 hdist=1 \
 ftm=5 \
-ref=<artifacts reference file> \
+ref=<sequencing_artifacts.fa.gz file including path> \
 stats=contam_stats.txt
 ```
-* note that ```<artifacts reference file>``` can be found as ```resources/sequencing_artifacts.fa.gz```  in the ```bbToolkit/``` directory. You can contact your cluster computer help desk for locating the sequencing_artifacts.fa.gz file.  
+This will remove all reads that have a 31-mer match to the artifacts reference reads, allowing 1 mismatch.
+
+* in=  : input file
+* out= : file containing filtered Reads
+* outm= : file containing reads that match the reference kmer
+* k= : Kmer number
+* hdist= : hamming distance, the number of allowed mismatches
+* ftm= modulo trim number ( usually 5), the right end is trimed so that the read's length is equal to molulo this number. The reason is that with Illumina sequencing runs are usually a multiple of 5 in length but sometimes they are generated with an extra base. This last base is very inaccurate and has badly calibrated quality as well, so it’s best to trim it before doing anything else.
+* ref= :  A file with all sequencing artifacts included in software source. can be found in  ```resources/``` directory where the bbToolkit program is installed. You can contact your cluster computer help desk for locating the file.  
 
 Lets look at the output:
 
 ```
-BBDuk version 37.02
+BBDuk version 37.36
 Initial:
-Memory: max=27755m, free=27031m, used=724m
+Memory: max=53667m, free=52547m, used=1120m
 
-Added 8085859 kmers; time: 	5.780 seconds.
-Memory: max=27755m, free=25438m, used=2317m
+Added 8085859 kmers; time:      1.298 seconds.
+Memory: max=53667m, free=50027m, used=3640m
 
 Input is being processed as paired
-Started output streams:	0.141 seconds.
-Processing time:   		14.159 seconds.
+Started output streams: 0.087 seconds.
+Processing time:                3.996 seconds.
 
-Input:                  	500000 reads 		75500000 bases.
-Contaminants:           	1086 reads (0.22%) 	162900 bases (0.22%)
-FTrimmed:               	500000 reads (100.00%) 	500000 bases (0.66%)
-Total Removed:          	1086 reads (0.22%) 	662900 bases (0.88%)
-Result:                 	498914 reads (99.78%) 	74837100 bases (99.12%)
+Input:                          500000 reads            75500000 bases.
+Contaminants:                   1044 reads (0.21%)      156600 bases (0.21%)
+FTrimmed:                       500000 reads (100.00%)  500000 bases (0.66%)
+Total Removed:                  1044 reads (0.21%)      656600 bases (0.87%)
+Result:                         498956 reads (99.79%)   74843400 bases (99.13%)
 
-Time:   			20.114 seconds.
-Reads Processed:        500k 	24.86k reads/sec
-Bases Processed:      75500k 	3.75m bases/sec
+Time:                           5.409 seconds.
+Reads Processed:        500k    92.44k reads/sec
+Bases Processed:      75500k    13.96m bases/sec
+
 ```
-0.22% of our reads contained contaminants or were too short after low quality reads were removed, suggesting that our insert size selection went well.
+0.21% of our reads contained contaminants or were too short after low quality reads were removed, suggesting that our insert size selection went well.
 
 If we look at the `contam_stats.txt` file we see that most of the contaminants were known Illumina linkers. Because so many of these have been erroneously deposited in the NT database, Blasting the contaminant sequences will turn up some very odd things. The first sequence in our contaminants file is supposedly a Carp.
 ```
-#File   data/10142.1.149555.ATGTC.subset_500k.fastq.gz
+#File   10142.1.149555.ATGTC.subset_500k.fastq.gz
 #Total  500000
-#Matched        935     0.18700%
+#Matched        884     0.17680%
 #Name   Reads   ReadsPct
-contam_27       490     0.09800%
-contam_11       252     0.05040%
-contam_10       81      0.01620%
-contam_12       73      0.01460%
-contam_9        18      0.00360%
-contam_257      13      0.00260%
-contam_175      3       0.00060%
-contam_256      3       0.00060%
+contam_27       477     0.09540%
+contam_11       240     0.04800%
+contam_12       75      0.01500%
+contam_10       59      0.01180%
+contam_9        16      0.00320%
+contam_257      8       0.00160%
+contam_175      2       0.00040%
+contam_256      2       0.00040%
+contam_102      1       0.00020%
 contam_15       1       0.00020%
+contam_178      1       0.00020%
+contam_181      1       0.00020%
 contam_8        1       0.00020%
+
 ```
 
 With shotgun paired end sequencing the size of the DNA sequenced is controlled by physically shearing the DNA and selecting DNA of a desired length with SPRI or Ampure beads.  This is an imperfect process and sometimes short pieces of DNA are sequenced.  If the DNA is shorter than the sequencing length (150pb in this case) The other adapter will be sequenced too.
 
+### Adapter trimming
+
 We can trim off this adapter and low quality ends using bbduk.
+
 ```bash
 # Trim the adapters using the reference file adaptors.fa (provided by bbduk)
-time bbduk.sh in=data/10142.1.149555.ATGTC.subset_500k.unmatched.fq.gz \
+
+bbduk.sh in=data/10142.1.149555.ATGTC.subset_500k.unmatched.fq.gz \
 out=data/10142.1.149555.ATGTC.subset_500k.trimmed.fastq.gz \
 ktrim=r \
 k=23 \
@@ -202,83 +204,102 @@ hdist=1 \
 tbo=t \
 qtrim=r \
 trimq=20 \
-ref=/software/apps/bbtools/gcc/64/37.02/resources/adapters.fa
+ref=<adapters.fa with full path>
 ```
-Time to run: 20 seconds
+
+* ktrim=r : right triming ( 3' adaptor)
+* k=23 : Kmer number
+* mink=11 : Adopters' length is usually shorter than the Kmer. this option additioanlly looks for shorter kmers between mink number and kmer number at the end of the read.
+* hdist=1 : hamming distance
+* tbo=t :  trim adopters based on where paired reads overlap
 
 Looking at the output
 ```
-BBBDuk version 37.02
+BBDuk version 37.36
 maskMiddle was disabled because useShortKmers=true
 Initial:
-Memory: max=4906m, free=4727m, used=179m
+Memory: max=53667m, free=52547m, used=1120m
 
-Added 216529 kmers; time: 	1.596 seconds.
-Memory: max=4906m, free=4445m, used=461m
+Added 216529 kmers; time:       0.152 seconds.
+Memory: max=53667m, free=50027m, used=3640m
 
 Input is being processed as paired
-Started output streams:	0.460 seconds.
-Processing time:   		24.124 seconds.
+Started output streams: 0.073 seconds.
+Processing time:                4.365 seconds.
 
-Input:                  	498914 reads 		74837100 bases.
-QTrimmed:               	40097 reads (8.04%) 	1135224 bases (1.52%)
-KTrimmed:               	3251 reads (0.65%) 	263478 bases (0.35%)
-Trimmed by overlap:     	1905 reads (0.38%) 	9896 bases (0.01%)
-Total Removed:          	2010 reads (0.40%) 	1408598 bases (1.88%)
-Result:                 	496904 reads (99.60%) 	73428502 bases (98.12%)
+Input:                          498956 reads            74843400 bases.
+QTrimmed:                       40363 reads (8.09%)     1140629 bases (1.52%)
+KTrimmed:                       3356 reads (0.67%)      273370 bases (0.37%)
+Trimmed by overlap:             1954 reads (0.39%)      9950 bases (0.01%)
+Total Removed:                  2118 reads (0.42%)      1423949 bases (1.90%)
+Result:                         496838 reads (99.58%)   73419451 bases (98.10%)
 
-Time:   			26.346 seconds.
-Reads Processed:        498k 	18.94k reads/sec
-Bases Processed:      74837k 	2.84m bases/sec
+Time:                           4.613 seconds.
+Reads Processed:        498k    108.17k reads/sec
+Bases Processed:      74843k    16.23m bases/sec
+[msayadi@condo153 toturial]$ salloc: Job 353318 has exceeded its time limit and its allocation has been revoked.
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: error: condo153: task 0: Killed
+
 ```
-* 40097 reads had their right ends quality trimmed
-* 3251 reads had adaptors trimmed because the matched they matched adaptors in the database
-* 1905 reads had a few base pairs trimmed because a small portion of an adaptor was detected when the read pairs were provisionally merged.
-* 2010 reads were removed because after trimming they were too short.
+* 40363 reads had their right ends quality trimmed
+* 3356 reads had adaptors trimmed because the matched they matched adaptors in the database
+* 1954 reads had a few base pairs trimmed because a small portion of an adaptor was detected when the read pairs were provisionally merged.
+* 2118 reads were removed because after trimming they were too short.
 
+## Merging Reads
+
+Overlapping reads are sometimes occurred in pair-end reads if the fragment length(F) is shorter than double the size of the reads(L).  Many software tools get confused with overlapping pairs. By merging the overlapping pairs and turning them into longer single-end reads many tools will produce better results.  
+
+In this toturial we use [BBMerge](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/) from BBTools toolkit.
 
 ```bash
 # Merge the reads together
-time bbmerge.sh in=data/10142.1.149555.ATGTC.subset_500k.trimmed.fastq.gz \
-out=data/10142.1.149555.ATGTC.subset_500k.merged.fastq.gz \
-outu=data/10142.1.149555.ATGTC.subset_500k.unmerged.fastq.gz \
-ihist=data/insert_size.txt
-usejni=t
+bbmerge.sh in=10142.1.149555.ATGTC.subset_500k.trimmed.fastq.gz \
+out=10142.1.149555.ATGTC.subset_500k.merged.fastq.gz \
+outu=10142.1.149555.ATGTC.subset_500k.unmerged.fastq.gz \
+ihist=insert_size.txt
 ```
+* in= input file
+* out= the output file for overlapped Reads
+* outu= if no best overlap is found the pair will go to outu
+* ihist= the insert size histogram file generated from the reads
+
 Here's the output:
 ```
-BBMerge version 37.02
+BBMerge version 37.36
 Writing mergable reads merged.
 Started output threads.
-Total time: 27.351 seconds.
+Total time: 3.347 seconds.
 
-Pairs:               	248452
-Joined:              	132490   	53.326%
-Ambiguous:           	115919   	46.656%
-No Solution:         	43       	0.017%
-Too Short:           	0       	0.000%
+Pairs:                  248419
+Joined:                 132258          53.240%
+Ambiguous:              116124          46.745%
+No Solution:            37              0.015%
+Too Short:              0               0.000%
 
-Avg Insert:          	234.4
-Standard Deviation:  	34.9
-Mode:                	244
+Avg Insert:             234.4
+Standard Deviation:     34.9
+Mode:                   244
 
-Insert range:        	121 - 291
-90th percentile:     	278
-75th percentile:     	262
-50th percentile:     	238
-25th percentile:     	210
-10th percentile:     	186
+Insert range:           120 - 291
+90th percentile:        278
+75th percentile:        262
+50th percentile:        238
+25th percentile:        211
+10th percentile:        186
+
 ```
-From the summary we can see that our average insert size was 234bp and 54% of
+From the summary we can see that our average insert size was 234bp and 53% of
 reads could be joined. From the insert-size.txt histogram file we can plot the
 data and see the shape of the distribution.
 
 ![Insert Size Histogram Plot](assets/metagenome/insertsize.svg)
 
 
-# Metagenome assembly
+## Metagenome assembly
 
-Most or our cleanup work is now done. We can assemble the metagenome with the Succinct DeBruijn graph assembler [Megahit](https://doi.org/10.1093/bioinformatics/btv033).
+Most of our cleanup work is now done. We can assemble the metagenome with the Succinct DeBruijn graph assembler [Megahit](https://doi.org/10.1093/bioinformatics/btv033).
 
 ```bash
 time megahit  -m 1200000000000 \

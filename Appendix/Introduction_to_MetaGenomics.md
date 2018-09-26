@@ -46,6 +46,14 @@ Improvements from the first generation methods:
 
 * The sequencing output is directly detected without the need for electrophoresis; base interrogation is performed cyclically and in parallel.
 
+#### Single vs. pair Reads
+
+Second generation sequencing technology begins with breaking up a long piece of DNA into lots of short pieces of DNA called "fragments". The resulting set of DNA fragments are called a "library". Each fragment is then sequenced individually and in parallel. There are two ways of sequencing a fragment:
+* single read sequencing : if only one one end is sequenced.
+* Pair read sequencing : if the technology can sequence both ends of a fragment. (standard practice on Illumina instruments like GaIIx, HiSeq and MiSeq)
+
+ for pair-end reads you want to make sure that fragment length (F) is at least double the size of the read length (L). Typical Illumina fragment libraries would use F ~ 450 bp. As reads getting longer ( for example > 250 on  MiSeq) the standard library size gets small and pair end reads will overlap. Moreover, the new enzymatic libraries contains a wide range of F sizes ( for example in Nextera library F ranges from 100bp to 900bp).
+
 
 ### Illumina sequencing
 

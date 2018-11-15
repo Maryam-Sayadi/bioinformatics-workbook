@@ -1,7 +1,7 @@
 # File Formats
 ---
 ## Learning Objective
-Upon completion of this section you will have a better understanding of the following file formats, how to read them and interpret the information they contain.
+Upon completion of this section you will have a better understanding of the following file formats, how to read them and interpret the information they contain
 
 * FASTA – plain sequences
 * FASTQ – sequencing reads
@@ -452,7 +452,7 @@ HISEQ:496:C4KY7ACXX:8:1101:1606:2994    133     *       0       0       *       
 [SAM specifications PDF](https://samtools.github.io/hts-specs/SAMv1.pdf)
 
 ---
-# BAM: Binary Alignemtn Map
+# BAM: Binary alignment Map
 
 BAM is the binary format of a SAM file.  It has a smaller storage footprint and needs to be decompressed to be human readable.
 

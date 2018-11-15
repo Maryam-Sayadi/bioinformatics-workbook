@@ -21,6 +21,9 @@
   * [Introduction to Data Acquisition](dataAcquisition/dAc_introduction.md)
   * Transferring data
     * [Downloading with wget](dataAcquisition/FileTransfer/downloading-files-via-wget.md)
+    * [Downloading with globus](dataAcquisition/FileTransfer/downloading-files-via-globus.md)
+    * [Dowloading with irod](dataAcquisition/FileTransfer/getting-data-from-iplant-via-irods.md)
+    * [Dowloading SRA files from NCBI](dataAcquisition/FileTransfer/downloading-sra-files-from-ncbi.md)
 
 ### Data Wrangling
   * FASTA(Q) manipulations

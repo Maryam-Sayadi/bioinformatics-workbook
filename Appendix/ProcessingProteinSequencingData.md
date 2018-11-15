@@ -1,15 +1,41 @@
-# Basics of Proteomics
+# Processing protein sequencing data
 
-We are going to work with Excel data sheets. Here are some short cuts and notes:
+We are going to work a lot with Excel data sheets. Here are some short cuts and notes:
 
 ###### For mac
-
-* Select all data cells : go to the first cell on the left. then command A
+* Select all data cells : go to the first cell on the left. then command A. Note: If there is a blank line in data, the selection will stop when it reaches the blank line. Before selecting make sure to delete all blank lines.
 * Select a column: Go to the first cell. shift + command + down arrow
 * Select a row: Go to the first cell on the left. Shift + command + right Key
 * Select several cells: Shift + arrow keys
-* For transferring only values not formulas ( This form of copy and paste is recommended. Regular paste could cause several #VALUE! and #NA values ): Edit > Special paste. Now you can choose "Values" in the Paste section instead of "All". From now on we will refer to this as "special paste".
+* Paste only values not formulas ( This form of copy and paste is recommended. Regular paste could cause several errors if the original reference cell is not available). Copy the range of cells you want to paste.
+Click `Edit > Paste Special`. In the Paste Special dialog box, Select `Values` from the Paste options. From now on we will refer to this as `special paste`.
 
+## Evaluating Data
+
+Before analyzing proteomics data we should evaluate it.
+* Note: For less than 1000 proteins, there is not enough data points for  statistically significant analysis.
+
+Count the number of zero abundances (blank cells in each row) for each protein.
+
+Syntax:
+
+`CountBlank(data-range)`
+
+Example:
+![CountBlank](assets/CountBlank.png)
+
+Now you can make a histogram of the number of blank cells.
+
+Syntax:
+
+`COUNTIFS(data-range, criteria1, [data range for criteria 2, criteria2])`
+
+For each bin `COUNTIFS` function counts the number of data points that satisfy the criteria1 ( less than the higher bin value) and criteria 2  (more than and equal to the lower bin value).
+For the above example, the range for bin criteria is form -1 to n, where n is the number of conditions ( Abundance columns).
+
+![Histpgram](assets/Histogram.png)
+
+Pay enough attention to the ratio of proteins with no abundance relative to the ones that are abundant in all of the conditions.
 
 ## Preprocessing data
 
@@ -23,20 +49,19 @@ Now we need to select only the invisible cells:
 * Mac user:
 
 ```
- Click on Edit > Find and pick "Go to"
- Click special
+ Edit > Find and then select "Go to"
+ Click Special
  Choose "Visible cells only"
  Click OK
 ```
-![Visible Cells Only](assets/VisibleCellsOnly.png)
 
 Now copy the selected cells and special paste in a new sheet.
 
-There are still  a lot of information in the data file that are not useful for our analysis. The columns that we need are:
+There are still a lot of information in the data file that are not useful for our analysis. The columns that we need are:
 * Accession
 * Abundances
 
-In the next step lets delete all the other cells from our new sheet. Now we will rename the Abundance columns for simplification and we will call them replicates.
+In the next step lets delete all the other Columns. For consistency rename the Abundance columns F1 ... Fn.
 
 For example:
 
@@ -48,7 +73,7 @@ At the end of the data file there are different PRTC values for each replicate. 
 
 For each replicate, we will normalize each abundance by dividing it by the average PRTC of the corresponding replicate.
 
-* Note: You can skip the next two sections and go to `Merging data files` if you are familiar with the autofill capability of Excel and know how to normalized values.
+* Note: You can skip the next three sections and go to `Merging data files` if you are familiar with the autofill capability of Excel and know how to normalized values.
 
 ##### Calculating the normalized values:
 
@@ -58,17 +83,17 @@ Select the cell you wan to have the normalized abundance value. In the cell ente
 
  and press Enter. The normalized value will be calculated in the chosen cell.
 
-  Double Click on the chosen cell. The formula will be shown. We are going to repeat the calculation for the whole column. In each cell the normalized value is calculated using a different Abundance number but the RTCL value will be the same for the whole replicate. If we use autofill at this step Excel will shift the RTCL cell at each step. To fix the position of the RTCL cell, use "$" before the name of the column and row of the RTCL cell in the shown formula and hit Enter again.
+  Double Click on the chosen cell. The formula will be shown. We are going to repeat the calculation for the whole column. In each cell the normalized value is calculated using a different Abundance number but the RTCL value will be the same for the whole replicate. If we use autofill at this step Excel will shift the RTCL cell at each step. To fix the position of the RTCL cell, use `$` before the the column and row number of the RTCL cell in the shown formula and hit Enter again.
 
   Example:
 
       =B2/$I$2
 
-  where B2 is the address of the cell containing abundance and I2 refers to the cell containing the average RTCL.
+  where B2 is the address of the cell containing the abundance and I2 refers to the cell containing the average RTCL.
 
 ##### Autofill
 
-  Select the cell containing the formula. Move the cursor over the little block in the lower right corner of the active cell. . The  cursor changes to a hairline `plus sign`. Double click on the plus sign  and the normalized values will be calculated for the  first replicate.
+  Select the cell containing the formula. Move the cursor over the little block in the lower right corner of the active cell. The  cursor changes to a hairline `plus sign`. Double click on the plus sign  and the normalized values will be calculated for the  first replicate.
 
   * important note:
 
@@ -82,14 +107,14 @@ Select the cell you wan to have the normalized abundance value. In the cell ente
 
 ##### Zero and #VALUE! cells:
 
-If any accession has no abundance in the data set the corresponding cell will be empty and the autofill return  #VALUE! for that cell. We need to replace these with space.
+If any accession has no abundance in the data set the corresponding cell will be empty and the autofill return  #VALUE! for that cell. We need to replace these with blanks.
 
 * In Mac:
 
   In the search field ![search field](assets/searchField.png), click the magnifing glass, and then click `advanced search`. Enter what you want to replace, in this case `#VALUE!` in the `Find what` box. Select `Values` from the `Look in` pop-up menu. Click `replace`. Leave the `Replace with:` box blank and click `Replace All`.    
 
 
-Copy and special paste (values) the Accessions and normalized abundances in a new sheet and save it.
+Copy and special paste (values) the accessions and normalized abundances in a new sheet and save it.
 
 
 ### Merging two Excel files:
@@ -114,7 +139,7 @@ Syntax:
 ```
 =VLOOKUP (lookup value, range containing the lookup value ,col_index in the range that contains the return value, TRUE for Approximate match or FALSE for exact match)
 ```
-Our look up value is the accessions from both files. We have a non-redundant range of accessions all in the same column. Our first lookup value is the first entry in the accession column. select the cell next to it. Use VLOOKUP function in that cell. The values are:
+ The lookup values are each of the non-redundant accessions copied in the new sheet. Our first lookup value is the first entry in the accession column. select the cell next to it. Use VLOOKUP function. The values are:
 
  * Lookup value: first Accession value
  * Lookup value range: all the cells from the Excel sheet containing the replicate of interest.  
@@ -127,26 +152,27 @@ Our look up value is the accessions from both files. We have a non-redundant ran
 
 ![VLookup](assets/VLookup.png)
 
-Use autofill for the column (replicate). Repeat for all the replicates by changing the Column-id and the Excel sheet address.
+Use autofill. Repeat for all the replicates by changing the Column-id and the Excel sheet address.
 
 Copy all the cells and special paste in a new sheet. Replace all `#VALU!`,`0` and `N/A` values with blank.
 
-Add a row detailing the condition ( group) for each replicate.
+Add a row detailing the condition (group) for each replicate.
 
 ###### Example:
 
  ![Group-name](assets/Group-Name.png)
 
- Copy all the cells, special paste and transpose the copies cells in a new sheet. Save the Excel file as a `.csv` file. The input file is ready.
+### Delete the entries with no abundance
+Select all abundance columns. From the `Data`
+ menu, click Filter.
+ Copy all the cells, special paste and transpose the copied cells in a new sheet. Save the Excel file as a `.csv` file. The input file is ready.
+
 
 ---------------
 
 ## MetaboAnalyst
 
 [MetaboAnalyst](http://www.metaboanalyst.ca/) is a set of online tools for metabolomic data analysis and interpretation.
-
-We will use the tool set for the following analysis:
-* T Score
 
 #### Uploading Data
 
@@ -161,29 +187,29 @@ Click on the `click here to start` on the welcome page of [MetaboAnalysit web pa
 
  #### Data Filtering
 
-Choose the box for `Filterinf features if their RSDs are   % in QC samples` and enter `25%`
- Select `interquantile range(IQR)`.
-Click `Proceed`
+Select `interquantile range(IQR)`. Click `Submit` and then`Proceed`
+
+* Note :
+
+Make sure that you submit the appropriate chosen method. The default is `no filtering` and if you `proceed` without `submitting`, the filtering will not be in effect.  
 
 #### Normalization Overview
 
 For `Sample normalization` select `None`. Select `Log transformation` for ` Data transformation` and `None` for `Data Scaling`. Click `Normalize`.
 Click `Proceed`.
 
-#### Selecting analysis path to explore
+#### Some useful analysis pathways to explore
 
 * Fold Change analysis:
-Choose `2` for `Fold change threshhold`.
-* T-test :
-* Volcano Plot:
+Choose `2` for `Fold change threshold`. Choose `Comparison type` based on your data. Keep in mind that fold change is `treatment/Control`. So if your initial columns in the input data file are Control experiment, you should change the `Comparison type` and `submit` the changes. Do the same thing for `Volcano plot` ( coming next). The plots are generated by default. Therefore every time a new setting is submitted, a new plot will be generated. Be careful to choose the correct plot for your report.  
+* T-test
+* Volcano Plot: The default thresholds for `Fold change` and ` P-value` are 2.0 and 0.1 respectively. Make sure to choose the correct `Comparison type` ( For more information please read Fold Change analysis above). The default thresholds are meant for choosing the significant data point which are over or under expressed. To include all data points in analysis (for comparison) change the `Fold change` and `P-value` threshold to 1 and 5 respectively and submit again.
 * Correlations: select `Detail View` from `View Mode` option menu. Click `submit`.
-
-* PCA:
+* PCA
 * PLSDA
 * sPLSDA
 * Dendrogram
 * Heatmap :  Select `Use top:` from `View Mode` menu and enter `100`. Click `Submit`.
-* Download
 * Generate Report
 
 ## Reporting analyzed data
@@ -210,6 +236,8 @@ From the downloaded directory, open `volcano.csv` file. Rename columns as `UniPr
 Go to [UniProt website for retriving protein IDs](https://www.uniprot.org/uploadlists/). Paste the protein IDs in `Provide your identifiers` box. In `Select option` section, select From:`UniProtKB AC/ID` and To: `UniProtKB` and submit. Mapping results will be presented in a table. Above the table, from the menu bar select `edit-Columns` ![Edit Columns](assets/EditColumns.png).
 From `Name & Taxonomy` menu bar select `Entry name`, `Gene name`, `Organism`, `Protein names`. From `Genome annotation` menu bar select `KEGG` and save.
 Click `Download`. In the Download box, select `Downlaod all`. Choose `tab separated` for the format and click `go`. Import the `.tab` file in Excel and select `tab` as your `Delimiter` to import data. In the header row rename  `Cross-reference (KEGG)` to `KEGG_ID(mmu)`. KEGG ids are reported as `mmu:x;` where `x` is the KEGG id number. Replace all `mmu:` and `;` in the KEGG ids with blank.
+
+Note: Some accessions have several KEG IDs all of them point to the same Pathway ( Next section). Therefore, we save the first KEGG ID and discard the rest.
 
 Next, insert new column between `KEGG_ID` and `FC` and name it `Color`.
 Color is assigned to each protein based on the log2(FC) value.

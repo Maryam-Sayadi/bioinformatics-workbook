@@ -42,7 +42,7 @@ options:
 * `ServerAliveCountMAx`:  Sets the number of server alive messages which may be sent without ssh receiving any messages back from the server. If this threshold is reached while server alive messages are being sent, ssh will disconnect from the server, terminating the session.The default value is 3. If, for example, ServerAliveInterval  is set to 15 and ServerAliveCountMax is left at the default, if the server becomes unresponsive, ssh will disconnect after approximately 45 seconds.
 
 
-Once you are logged in, you can request access to an interactive node. In a real analysis you would create a script that runs all the commands in sequence and submit the script through a program (such as [sbatch](https://slurm.schedmd.com/sbatch.html)) that submits a batch script to a computer's job scheduling software such as [Slurm](https://slurm.schedmd.com/)).
+Once you are logged in, you can request access to an interactive node. In a real analysis you would create a script that runs all the commands in sequence and submit the script through a program (such as [sbatch](https://slurm.schedmd.com/sbatch.html)) that submits a batch script to a computer's job scheduling software (such as [Slurm](https://slurm.schedmd.com/)).
 
 To request access to an interactive node on [slurm workload manager](https://slurm.schedmd.com/):
 ```bash
@@ -50,7 +50,7 @@ salloc -p <queue(partition) name> -N <number of nodes> -n <number of tasks> -t <
 ```
 
 
-*  To see available queues on [slurm workload manager](https://slurm.schedmd.com/) use the command "sinfo"
+*  To see available queues on [slurm workload manager](https://slurm.schedmd.com/) use the command `sinfo`.
 * The default value for -n is one task per node, but  the --cpus-per-task option will change this default.
 * Request time as hh:mm:ss , example : 04:00:00 (four hours)
 
@@ -58,7 +58,7 @@ salloc -p <queue(partition) name> -N <number of nodes> -n <number of tasks> -t <
 
 ### Required modules
 
-* [BBDuk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/) : for trimming
+* [BBDuk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/) : for trimming sequences
 * [Megahit](https://github.com/voutcn/megahit): for assembly
 * [samTools](http://samtools.sourceforge.net/) : for sequence alignment
 * [Quast](http://bioinf.spbau.ru/quast) : for evaluating genome assemblies
@@ -129,13 +129,13 @@ stats=contam_stats.txt
 ```
 This will remove all reads that have a 31-mer match to the artifacts reference reads, allowing 1 mismatch.
 
-* in=  : input file
-* out= : file containing filtered Reads
-* outm= : file containing reads that match the reference kmer
-* k= : Kmer number
-* hdist= : hamming distance, the number of allowed mismatches
-* ftm= modulo trim number ( usually 5), the right end is trimed so that the read's length is equal to molulo this number. The reason is that with Illumina sequencing runs are usually a multiple of 5 in length but sometimes they are generated with an extra base. This last base is very inaccurate and has badly calibrated quality as well, so it’s best to trim it before doing anything else.
-* ref= :  A file with all sequencing artifacts included in software source. can be found in  ```resources/``` directory where the bbToolkit program is installed. You can contact your cluster computer help desk for locating the file.  
+* in  : input file
+* out : file containing filtered Reads
+* outm : file containing reads that match the reference kmer
+* k : Kmer number
+* hdist : hamming distance, the number of allowed mismatches
+* ftm modulo trim number ( usually 5), the right end is trimed so that the read's length is equal to molulo this number. The reason is that with Illumina sequencing runs are usually a multiple of 5 in length but sometimes they are generated with an extra base. This last base is very inaccurate and has badly calibrated quality as well, so it’s best to trim it before doing anything else.
+* ref :  A file with all sequencing artifacts included in software source. can be found in  ```resources/``` directory where the bbToolkit program is installed. You can contact your cluster computer help desk for locating the file.  
 
 Lets look at the output:
 
@@ -195,8 +195,8 @@ We can trim off this adapter and low quality ends using bbduk.
 ```bash
 # Trim the adapters using the reference file adaptors.fa (provided by bbduk)
 
-bbduk.sh in=data/10142.1.149555.ATGTC.subset_500k.unmatched.fq.gz \
-out=data/10142.1.149555.ATGTC.subset_500k.trimmed.fastq.gz \
+bbduk.sh in=10142.1.149555.ATGTC.subset_500k.unmatched.fq.gz \
+out=10142.1.149555.ATGTC.subset_500k.trimmed.fastq.gz \
 ktrim=r \
 k=23 \
 mink=11 \
@@ -207,11 +207,14 @@ trimq=20 \
 ref=<adapters.fa with full path>
 ```
 
-* ktrim=r : right triming ( 3' adaptor)
+* ktrim= r : Once a reference kmer   
 * k=23 : Kmer number
-* mink=11 : Adopters' length is usually shorter than the Kmer. this option additioanlly looks for shorter kmers between mink number and kmer number at the end of the read.
-* hdist=1 : hamming distance
+* mink=11 : Adopters' length is usually shorter than the Kmer. this option additioanlly looks for shorter kmers between mink number and kmer number only at the end of the read.
+* hdist : hamming distance
 * tbo=t :  trim adopters based on where paired reads overlap
+* qtrim : right triming ( 3' adaptor)
+* trimq :
+* ref : reference adaptor file usually found in `resources/` directory.
 
 Looking at the output
 ```
@@ -301,26 +304,44 @@ data and see the shape of the distribution.
 
 Most of our cleanup work is now done. We can assemble the metagenome with the Succinct DeBruijn graph assembler [Megahit](https://doi.org/10.1093/bioinformatics/btv033).
 
+Syntax:
 ```bash
-time megahit  -m 1200000000000 \
+megahit [options] {-1 <pe_1.fq> -2 <pe_2.fq> | --12 <pe12.fq> | -r <se.fq>}
+```
+`-1/-2`, `--12` and `-r` are parameters for inputing paired-end, interleaved-paired-end and single-end files. files in fasta (.fasta, .fa, .fna) or fastq (.fastq, .fq) formats are accepted as input. For detailed usage message please run `./megahit -h`.
+
+* Example:
+
+
+```bash
+ megahit  -m 1200000000000 \
 -t 38 \
---read data/10142.1.149555.ATGTC.subset_500k.merged.fastq.gz \
---12 data/10142.1.149555.ATGTC.subset_500k.unmerged.fastq.gz \
+--read 10142.1.149555.ATGTC.subset_500k.merged.fastq.gz \
+--12 10142.1.149555.ATGTC.subset_500k.unmerged.fastq.gz \
 --k-list 21,41,61,81,99 \
 --no-mercy \
 --min-count 2 \
---out-dir data/megahit/
+--out-dir megahit/
 ```
-Time to run: 3 minutes
+
+* Note:
+
+  --k-list : comma-separeted list of kmer size all must be odd, in the range 15-255.
+
+  For ultra complex metagenomics data such as soil, a larger Kmin, say 27, is recommended to reduce the complexity of the `de Bruijn` graph. For high-depth generic data, large `--k-min` ( 25 to 31) is recommended. Smaller `--k-step`, around 10 is more friendly to low-coverage datasets.
+
+  --no-mercy : specially designed for metagenomics assembly to recover low coverage sequence. For generic dataset >=30x, megahit may generate better results with `--no-mercy` option.
+
+  --min-count 2 : (Kmin + 1)-mer with multiplicity lower than 2 will be discarded. Values lower than 2 lead to a much larger and noisy graph.
 
 # Looking at the assembly
 
-Megahit tells us that the longest contig was 129514 bp and the N50 was 6252 bp. We can use Quast to look at the assembly more.
+Looking at the log file tells us that the longest contig was 129514 bp and the N50 was 6142 bp. We can use Quast to look at the assembly more.
 
 ```bash
 quast.py -o data/quast -t 4 -f --meta data/megahit/final.contigs.fa
 ```
-Time to run: 10 seconds
+
 
 All statistics are based on contigs of size >= 500 bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).
 
@@ -348,14 +369,13 @@ Although its not generally required, we can also visualize our assemblies by gen
 
 ```bash
 megahit_toolkit contig2fastg 99 \
-data/megahit/intermediate_contigs/k99.contigs.fa > data/k99.fastg
+megahit/intermediate_contigs/k99.contigs.fa > k99.fastg
 ```
-Time to run: 3 seconds
 
 Download the file to  your local computer by opening a new Terminal window and copying the file
 
 ```bash
-scp user.name@login.ecinet.science:~/metagenome1/data/k99.fastg .
+scp user.name@host:directory/k99.fastg .
 ```
 
 Now open Bandage and select **File > Open Graph** and load ```k99.fastg```

@@ -19,7 +19,7 @@ Count the number of zero abundances (blank cells in each row) for each protein.
 
 Syntax:
 
-`CountBlank(data-range)`
+`CountBlank(data-range)
 
 Example:
 ![CountBlank](assets/CountBlank.png)

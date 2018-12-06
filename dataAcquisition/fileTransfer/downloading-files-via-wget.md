@@ -3,6 +3,7 @@
 Wget is short for World Wide Web get and is used on the command line to download a file from a website or web server.
 
 ## Learning Objective
+
 Upon completion of this section the learner will be able to:
 
 * Utilize wget to download a files
